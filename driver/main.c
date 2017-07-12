@@ -867,7 +867,7 @@ cleanup_ioctl_procinfo:
 
 		vpr_info("PPM_IOCTL_MASK_UNSET_EVENT (%u), consumer %p\n", syscall_to_unset, consumer_id);
 
-		if (syscall_to_unset > NR_syscalls) {
+		if (syscall_to_unset > PPM_EVENT_MAX) {
 			pr_err("invalid syscall %u\n", syscall_to_unset);
 			ret = -EINVAL;
 			goto cleanup_ioctl;
