@@ -1669,6 +1669,7 @@ static int record_event_consumer(struct ppm_consumer_t *consumer,
 	}
 
 	if (ts->tv_sec > ring->last_print_time.tv_sec + 1) {
+		usedspace += event_size;
 		vpr_info("consumer:%p CPU:%d, use:%d%%, ev:%llu, dr_buf:%llu, dr_pf:%llu, pr:%llu, cs:%llu\n",
 			   consumer->consumer_id,
 		       smp_processor_id(),
