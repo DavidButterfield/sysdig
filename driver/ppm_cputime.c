@@ -147,7 +147,7 @@ unsigned long nsecs_to_jiffies(u64 n)
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0))
 /*
  * Perform (stime * rtime) / total, but avoid multiplication overflow by
- * loosing precision when the numbers are big.
+ * losing precision when the numbers are big.
  */
 static cputime_t scale_stime(u64 stime, u64 rtime, u64 total)
 {
@@ -185,7 +185,8 @@ drop_precision:
 	 * Make sure gcc understands that this is a 32x32->64 multiply,
 	 * followed by a 64/32->64 divide.
 	 */
-	scaled = div_u64((u64) (u32) stime * (u64) (u32) rtime, (u32)total);
+//	scaled = div_u64((u64) (u32) stime * (u64) (u32) rtime, (u32)total); //XXX Does not match comment
+	scaled = div_u64((u64) ((u32)stime * (u32)rtime), (u32)total);
 	return (__force cputime_t) scaled;
 }
 
