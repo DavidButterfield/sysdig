@@ -1449,6 +1449,10 @@ static int record_event_consumer(struct ppm_consumer_t *consumer,
 
 	/*
 	 * Calculate the space currently available in the buffer
+	 *
+	 * XXX NOTE!  In this code and the ring_info structure:
+	 *      the TAIL of the queue (the end you add things to) is named "head";
+	 *      the HEAD of the queue (the end you remove things from) is named "tail".
 	 */
 	head = ring_info->head;
 	ttail = ring_info->tail;
