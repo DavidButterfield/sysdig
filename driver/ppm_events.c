@@ -270,7 +270,7 @@ inline u32 compute_snaplen(struct event_filler_arguments *args, char *buf, u32 l
 							/*
 							 * Copy the address
 							 */
-							err = addr_to_kernel(usrsockaddr, val, (struct sockaddr *)&peer_address);
+							err = addr_to_kernel(usrsockaddr, peer_address_len, (struct sockaddr *)&peer_address);
 						} else {
 							/*
 							 * This case should be very rare, fallback again to sock
