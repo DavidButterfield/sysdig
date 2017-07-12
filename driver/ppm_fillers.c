@@ -1219,8 +1219,8 @@ static int f_proc_startupdate(struct event_filler_arguments *args)
 			args_len = mm->arg_end - mm->arg_start;
 
 			if (args_len) {
-				if (args_len > PAGE_SIZE)
-					args_len = PAGE_SIZE;
+				if (args_len > available)
+					args_len = available;
 
 				if (unlikely(ppm_copy_from_user(args->str_storage, (const void __user *)mm->arg_start, args_len)))
 					return PPM_FAILURE_INVALID_USER_MEMORY;
@@ -1466,8 +1466,8 @@ cgroups_error:
 			env_len = mm->env_end - mm->env_start;
 
 			if (env_len) {
-				if (env_len > PAGE_SIZE)
-					env_len = PAGE_SIZE;
+				if (env_len > available)
+					env_len = available;
 
 				if (unlikely(ppm_copy_from_user(args->str_storage, (const void __user *)mm->env_start, env_len)))
 					return PPM_FAILURE_INVALID_USER_MEMORY;
