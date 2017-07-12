@@ -1020,20 +1020,16 @@ static int accumulate_argv_or_env(const char __user * __user *argv,
 		n_bytes_copied = ppm_strncpy_from_user(&str_storage[len], p,
 						       available);
 
-		/* ppm_strncpy_from_user includes the trailing \0 in its return
-		 * count. I want to pretend it was strncpy_from_user() so I
-		 * subtract off the 1 */
-		n_bytes_copied--;
-
 		if (n_bytes_copied < 0)
 			return PPM_FAILURE_INVALID_USER_MEMORY;
 
-		if (n_bytes_copied >= available)
+		if (n_bytes_copied > available) {
+			ASSERT(0);  /* implies bug in ppm_strncpy_from_user() */
 			return PPM_FAILURE_BUFFER_FULL;
+		}
 
-		/* update buffer. I want to keep the trailing \0, so I +1 */
-		available   -= n_bytes_copied+1;
-		len         += n_bytes_copied+1;
+		available   -= n_bytes_copied;
+		len         += n_bytes_copied;
 
 		argv++;
 	}
@@ -1071,21 +1067,19 @@ static int compat_accumulate_argv_or_env(compat_uptr_t argv,
 		n_bytes_copied = ppm_strncpy_from_user(&str_storage[len], p,
 						       available);
 
-		/* ppm_strncpy_from_user includes the trailing \0 in its return
-		 * count. I want to pretend it was strncpy_from_user() so I
-		 * subtract off the 1 */
-		n_bytes_copied--;
-
 		if (n_bytes_copied < 0) {
 			printk(pr_fmt("Error on copy here3"));
 			return PPM_FAILURE_INVALID_USER_MEMORY;
 		}
-		if (n_bytes_copied >= available)
+
+		if (n_bytes_copied > available) {
+			ASSERT(0);  /* implies bug in ppm_strncpy_from_user() */
 			return PPM_FAILURE_BUFFER_FULL;
+		}
 
 		/* update buffer. I want to keep the trailing \0, so I +1 */
-		available   -= n_bytes_copied+1;
-		len         += n_bytes_copied+1;
+		available   -= n_bytes_copied;
+		len         += n_bytes_copied;
 
 		argv += sizeof(compat_uptr_t);
 	}
