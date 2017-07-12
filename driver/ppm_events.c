@@ -528,9 +528,7 @@ int val_to_ring(struct event_filler_arguments *args, uint64_t val, u16 val_len, 
 					 * Calculate the snaplen
 					 */
 					if (likely(args->enforce_snaplen)) {
-						u32 sl = args->consumer->snaplen;
-
-						sl = compute_snaplen(args, args->buffer + args->arg_data_offset, dpi_lookahead_size);
+						u32 sl = compute_snaplen(args, args->buffer + args->arg_data_offset, dpi_lookahead_size);
 
 						if (val_len > sl)
 							val_len = sl;
@@ -1254,8 +1252,6 @@ int32_t parse_readv_writev_bufs(struct event_filler_arguments *args, const struc
 			for (j = 0; j < iovcnt; j++) {
 				if ((flags & PRB_FLAG_IS_WRITE) == 0) {
 					if (bufsize >= retval) {
-						ASSERT(bufsize >= retval);
-
 						/*
 						 * Copied all the data even if we haven't reached the
 						 * end of the buffer.
@@ -1385,8 +1381,6 @@ int32_t compat_parse_readv_writev_bufs(struct event_filler_arguments *args, cons
 			for (j = 0; j < iovcnt; j++) {
 				if ((flags & PRB_FLAG_IS_WRITE) == 0) {
 					if (bufsize >= retval) {
-						ASSERT(bufsize >= retval);
-
 						/*
 						 * Copied all the data even if we haven't reached the
 						 * end of the buffer.
