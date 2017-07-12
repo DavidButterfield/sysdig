@@ -191,8 +191,8 @@ inline u32 compute_snaplen(struct event_filler_arguments *args, char *buf, u32 l
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)
 		struct fd f = fdget(args->fd);
 
-		if (f.file && f.file->f_inode) {
-			if (f.file->f_inode->i_rdev == PPM_NULL_RDEV) {
+		if (f.file) {
+			if (f.file->f_inode && f.file->f_inode->i_rdev == PPM_NULL_RDEV) {
 				res = RW_SNAPLEN_EVENT;
 				fdput(f);
 				return res;
