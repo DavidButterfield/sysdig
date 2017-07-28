@@ -123,6 +123,8 @@ long ppm_strncpy_from_user(char *to, const char __user *from, unsigned long n)
 		/*
 		 * Read bytes_to_read bytes at a time, and look for the terminator. Should be fast
 		 * since the copy_from_user is optimized for the processor
+		 *
+		 * XXX Does reading 4 at a time make sense if "from" is unaligned?
 		 */
 		if (n < bytes_to_read)
 			bytes_to_read = n;
@@ -392,6 +394,8 @@ inline u32 compute_snaplen(struct event_filler_arguments *args, char *buf, u32 l
 								*(u32 *)buf == g_http_trace_intval ||
 								*(u32 *)buf == g_http_connect_intval ||
 								*(u32 *)buf == g_http_options_intval ||
+								// XXX should g_http_head_intval be mentioned around here?
+								// XXX Investigate what the '/' check is for
 								((*(u32 *)buf == g_http_resp_intval) && (buf[4] == '/'))
 							) {
 								sockfd_put(sock);
@@ -480,6 +484,7 @@ int val_to_ring(struct event_filler_arguments *args, uint64_t val, u16 val_len, 
 				if (++len > args->arg_data_size)
 					len = args->arg_data_size;
 			}
+			ASSERT(len > 0);
 
 			/*
 			 * Make sure the string is null-terminated
@@ -520,10 +525,13 @@ int val_to_ring(struct event_filler_arguments *args, uint64_t val, u16 val_len, 
 				if (unlikely(len != 0))
 					return PPM_FAILURE_INVALID_USER_MEMORY;
 
+				ASSERT(dpi_lookahead_size <= val_len);
+				ASSERT(dpi_lookahead_size <= args->arg_data_size);
 				/*
 				 * Check if there's more to copy
 				 */
-				if (likely((dpi_lookahead_size != val_len))) {
+				if (likely(dpi_lookahead_size != val_len)) {
+					ASSERT(dpi_lookahead_size < val_len);
 					/*
 					 * Calculate the snaplen
 					 */
@@ -534,8 +542,10 @@ int val_to_ring(struct event_filler_arguments *args, uint64_t val, u16 val_len, 
 							val_len = sl;
 					}
 
-					if (unlikely((val_len) >= args->arg_data_size))
+					if (unlikely(val_len > args->arg_data_size))
 						val_len = args->arg_data_size;
+
+					ASSERT(val_len <= args->arg_data_size);
 
 					if (val_len > dpi_lookahead_size) {
 						len = (int)ppm_copy_from_user(args->buffer + args->arg_data_offset + dpi_lookahead_size,
