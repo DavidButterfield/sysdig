@@ -783,6 +783,7 @@ cleanup_ioctl_procinfo:
 	}
 	case PPM_IOCTL_ENABLE_DROPPING_MODE:
 	{
+		/* Data collected during a fraction F of each realtime second; F is 1/ratio. */
 		u32 new_sampling_ratio;
 
 		consumer->dropping_mode = 1;
@@ -977,6 +978,8 @@ cleanup_ioctl_nolock:
 	return ret;
 }
 
+#define RING_WRAP_OVERLAP_SIZE	(2 * (long)PAGE_SIZE)	//XXX move to some .h file
+
 static int ppm_mmap(struct file *filp, struct vm_area_struct *vma)
 {
 	int ret;
@@ -1015,16 +1018,17 @@ static int ppm_mmap(struct file *filp, struct vm_area_struct *vma)
 		/*
 		 * Enforce ring buffer size
 		 */
-		if (RING_BUF_SIZE < 2 * PAGE_SIZE) {
+		if (RING_BUF_SIZE < RING_WRAP_OVERLAP_SIZE) {
 			pr_err("Ring buffer size too small (%ld bytes, must be at least %ld bytes\n",
 			       (long)RING_BUF_SIZE,
-			       (long)PAGE_SIZE);
+			       RING_WRAP_OVERLAP_SIZE);
 			ret = -EIO;
 			goto cleanup_mmap;
 		}
 
-		if (RING_BUF_SIZE / PAGE_SIZE * PAGE_SIZE != RING_BUF_SIZE) {
-			pr_err("Ring buffer size is not a multiple of the page size\n");
+		if (RING_BUF_SIZE % PAGE_SIZE != 0) {
+			pr_err("Ring buffer size (%ld) is not a multiple of the page size\n",
+			       (long)RING_BUF_SIZE);
 			ret = -EIO;
 			goto cleanup_mmap;
 		}
@@ -1041,13 +1045,12 @@ static int ppm_mmap(struct file *filp, struct vm_area_struct *vma)
 
 		if (length <= PAGE_SIZE) {
 			/*
-			 * When the size requested by the user is smaller than a page, we assume
+			 * When the size requested by the user is no larger than a page, we assume
 			 * she's mapping the ring info structure
 			 */
 			vpr_info("mapping the ring info\n");
 
 			vmalloc_area_ptr = (char *)ring->info;
-			orig_vmalloc_area_ptr = vmalloc_area_ptr;
 
 			pfn = vmalloc_to_pfn(vmalloc_area_ptr);
 
@@ -1063,9 +1066,10 @@ static int ppm_mmap(struct file *filp, struct vm_area_struct *vma)
 		} else if (length == RING_BUF_SIZE * 2) {
 			long mlength;
 
-			/*
-			 * When the size requested by the user equals the ring buffer size, we map the full
-			 * buffer
+			/* When the size requested by the user equals double the ring buffer
+			 * size, we map the full buffer.  The size mapped by userland is double
+			 * the size of the buffer, mapping the buffer twice to facilitate access
+			 * to data that wraps from the end of the buffer back to the beginning.
 			 */
 			vpr_info("mapping the data buffer\n");
 
@@ -1280,6 +1284,7 @@ static inline void record_drop_x(struct ppm_consumer_t *consumer, struct timespe
 	}
 }
 
+/* Returns 1 if the event should be dropped, else returns zero */
 static inline int drop_event(struct ppm_consumer_t *consumer,
 			     enum ppm_event_type event_type,
 			     enum syscall_flags drop_flags,
@@ -1324,7 +1329,7 @@ static inline int drop_event(struct ppm_consumer_t *consumer,
 		}
 
 		if (close_return)
-			return 1;
+			return 1;   /* close of an invalid fd */
 	}
 
 	if (drop_flags & UF_NEVER_DROP) {
@@ -1332,6 +1337,12 @@ static inline int drop_event(struct ppm_consumer_t *consumer,
 		return 0;
 	}
 
+	/* In dropping_mode, we only keep data collected during the first "sampling_interval"
+	 * nanoseconds of each second.  The sampling_interval is 1/ratio, where ratio was the
+	 * argument to ioctl(ENABLE_DROPPING_MODE).
+	 *
+	 * XXX TODO: Investigate performance of the communication with userspace.
+	 */
 	if (consumer->dropping_mode) {
 		if (drop_flags & UF_ALWAYS_DROP) {
 			ASSERT((drop_flags & UF_NEVER_DROP) == 0);
@@ -1427,7 +1438,6 @@ static int record_event_consumer(struct ppm_consumer_t *consumer,
 	ring_info->n_evts++;
 	if (event_datap->category == PPMC_CONTEXT_SWITCH && event_datap->event_info.context_data.sched_prev != NULL) {
 		if (event_type != PPME_SYSDIGEVENT_E && event_type != PPME_CPU_HOTPLUG_E) {
-			ASSERT(event_datap->event_info.context_data.sched_prev != NULL);
 			ASSERT(event_datap->event_info.context_data.sched_next != NULL);
 			ring_info->n_context_switches++;
 		}
@@ -1463,14 +1473,18 @@ static int record_event_consumer(struct ppm_consumer_t *consumer,
 		freespace = RING_BUF_SIZE + ttail - head - 1;
 
 	usedspace = RING_BUF_SIZE - freespace - 1;
-	delta_from_end = RING_BUF_SIZE + (2 * PAGE_SIZE) - head - 1;
+	delta_from_end = RING_BUF_SIZE + RING_WRAP_OVERLAP_SIZE - head - 1;
 
 	ASSERT(freespace <= RING_BUF_SIZE);
 	ASSERT(usedspace <= RING_BUF_SIZE);
 	ASSERT(ttail <= RING_BUF_SIZE);
 	ASSERT(head <= RING_BUF_SIZE);
-	ASSERT(delta_from_end < RING_BUF_SIZE + (2 * PAGE_SIZE));
-	ASSERT(delta_from_end > (2 * PAGE_SIZE) - 1);
+	ASSERT(delta_from_end < RING_BUF_SIZE + RING_WRAP_OVERLAP_SIZE);
+	ASSERT(delta_from_end > RING_WRAP_OVERLAP_SIZE - 1);
+
+	memset(&args, 0, sizeof(args));
+	args.syscall_id = -1;
+
 #ifdef _HAS_SOCKETCALL
 	/*
 	 * If this is a socketcall system call, determine the correct event type
@@ -1493,10 +1507,6 @@ static int record_event_consumer(struct ppm_consumer_t *consumer,
 			event_type = tet;
 		else
 			event_type = tet + 1;
-
-	} else {
-		args.is_socketcall = false;
-		args.compat = false;
 	}
 
 	args.socketcall_syscall = event_datap->socketcall_syscall;
@@ -1543,19 +1553,11 @@ static int record_event_consumer(struct ppm_consumer_t *consumer,
 			args.syscall_id = event_datap->event_info.syscall_data.id;
 			args.cur_g_syscall_code_routing_table = event_datap->event_info.syscall_data.cur_g_syscall_code_routing_table;
 			args.compat = event_datap->compat;
-		} else {
-			args.regs = NULL;
-			args.syscall_id = -1;
-			args.cur_g_syscall_code_routing_table = NULL;
-			args.compat = false;
 		}
 
 		if (event_datap->category == PPMC_CONTEXT_SWITCH) {
 			args.sched_prev = event_datap->event_info.context_data.sched_prev;
 			args.sched_next = event_datap->event_info.context_data.sched_next;
-		} else {
-			args.sched_prev = NULL;
-			args.sched_next = NULL;
 		}
 
 		if (event_datap->category == PPMC_SIGNAL) {
@@ -1574,20 +1576,14 @@ static int record_event_consumer(struct ppm_consumer_t *consumer,
 				args.spid = event_datap->event_info.signal_data.info->_sifields._sigchld._pid;
 			} else if (args.signo >= SIGRTMIN && args.signo <= SIGRTMAX) {
 				args.spid = event_datap->event_info.signal_data.info->_sifields._rt._pid;
-			} else {
-				args.spid = (__kernel_pid_t) 0;
 			}
-		} else {
-			args.signo = 0;
-			args.spid = (__kernel_pid_t) 0;
 		}
 		args.dpid = current->pid;
 
-		args.curarg = 0;
+		/* arg_data_size is the maximum available space for the arg data to be filled in below */
 		args.arg_data_size = args.buffer_size - args.arg_data_offset;
 		args.nevents = ring->nevents;
 		args.str_storage = ring->str_storage;
-		args.enforce_snaplen = false;
 
 		/*
 		 * Fire the filler callback
@@ -1603,6 +1599,9 @@ static int record_event_consumer(struct ppm_consumer_t *consumer,
 			 */
 			cbres = g_ppm_events[event_type].filler_callback(&args);
 		}
+
+		/* Verify that event_size never exceeds the max we guarantee we can handle */
+		ASSERT(event_size <= RING_WRAP_OVERLAP_SIZE + 1);
 
 		if (likely(cbres == PPM_SUCCESS)) {
 			/*
@@ -1902,13 +1901,13 @@ static int init_ring_buffer(struct ppm_ring_buffer_context *ring)
 	 * Note how we allocate 2 additional pages: they are used as additional overflow space for
 	 * the event data generation functions, so that they always operate on a contiguous buffer.
 	 */
-	ring->buffer = vmalloc(RING_BUF_SIZE + 2 * PAGE_SIZE);
+	ring->buffer = vmalloc(RING_BUF_SIZE + RING_WRAP_OVERLAP_SIZE);
 	if (ring->buffer == NULL) {
 		pr_err("Error allocating ring memory\n");
 		goto init_ring_err;
 	}
 
-	for (j = 0; j < RING_BUF_SIZE + 2 * PAGE_SIZE; j++)
+	for (j = 0; j < RING_BUF_SIZE + RING_WRAP_OVERLAP_SIZE; j++)
 		ring->buffer[j] = 0;
 
 	/*
