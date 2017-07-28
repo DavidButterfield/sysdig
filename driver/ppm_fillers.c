@@ -521,6 +521,10 @@ static inline u32 open_flags_to_scap(unsigned long flags)
 	if (flags & O_CLOEXEC)
 		res |= PPM_O_CLOEXEC;
 #endif
+	// XXX O_ASYNC
+	// XXX O_NOFOLLOW
+	// XXX O_PATH
+	// XXX O_TMPFILE
 	return res;
 }
 
