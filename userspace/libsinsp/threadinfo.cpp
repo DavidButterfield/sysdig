@@ -195,6 +195,7 @@ void sinsp_threadinfo::compute_program_hash()
 	}
 	else if(m_comm.size() >= 6)
 	{
+		//XXX This will match a program named "python,monty"
 		if(m_comm.substr(0, 6) == "python")
 		{
 			m_program_hash_falco = m_program_hash;
