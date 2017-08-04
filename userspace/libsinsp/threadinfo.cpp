@@ -768,6 +768,7 @@ uint64_t sinsp_threadinfo::get_fd_usage_pct()
 	if(fdlimit > 0)
 	{
 		uint64_t fd_opencount = get_fd_opencount();
+		//XXX What happens if I open a bunch of files and then lower my fdlimit?
 		ASSERT(fd_opencount <= (uint64_t) fdlimit);
 		if(fd_opencount <= (uint64_t) fdlimit)
 		{
@@ -790,6 +791,7 @@ double sinsp_threadinfo::get_fd_usage_pct_d()
 	if(fdlimit > 0)
 	{
 		uint64_t fd_opencount = get_fd_opencount();
+		//XXX What happens if I open a bunch of files and then lower my fdlimit?
 		ASSERT(fd_opencount <= (uint64_t) fdlimit);
 		if(fd_opencount <= (uint64_t) fdlimit)
 		{
