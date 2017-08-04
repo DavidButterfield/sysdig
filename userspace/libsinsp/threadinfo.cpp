@@ -488,13 +488,11 @@ void sinsp_threadinfo::set_env(const char* env, size_t len)
 		if(!strlen(left))
 		{
 			size_t sz = len - offset;
-			void* zero = calloc(sz, sizeof(char));
-			if(!memcmp(left, zero, sz))
-			{
-				free(zero);
-				return;
+			size_t i;
+			for (i = 1; i < sz; i++) {
+				if (left[i] != 0) break;
 			}
-			free(zero);
+			if (i >= sz) return;
 		}
 		m_env.push_back(left);
 
