@@ -549,6 +549,8 @@ string sinsp_threadinfo::get_env(const string& name)
 	return "";
 }
 
+#define CGROUP_STRING "_cgroup"
+
 void sinsp_threadinfo::set_cgroups(const char* cgroups, size_t len)
 {
 	m_cgroups.clear();
@@ -568,10 +570,10 @@ void sinsp_threadinfo::set_cgroups(const char* cgroups, size_t len)
 		string cgroup(sep + 1);
 
 		size_t subsys_length = subsys.length();
-		size_t pos = subsys.find("_cgroup");
+		size_t pos = subsys.find(CGROUP_STRING);
 		if(pos != string::npos)
 		{
-			subsys.erase(pos, sizeof("_cgroup") - 1);
+			subsys.erase(pos, sizeof(CGROUP_STRING) - 1);
 		}
 
 		if(subsys == "perf")
