@@ -523,16 +523,23 @@ const vector<string>& sinsp_threadinfo::get_env()
 	}
 }
 
+//XXX env_var.length() and env_var.size() are both used in this function, but they are identical; pick one.
 string sinsp_threadinfo::get_env(const string& name)
 {
 	for(const auto& env_var : get_env())
 	{
+		//XXX Searching for name "FOO" will match environment variable "FOOBAR"
 		if((env_var.length() > name.length()) && (env_var.substr(0, name.length()) == name))
 		{
 			std::string::size_type pos = env_var.find('=');
 			if(pos != std::string::npos && env_var.size() > pos + 1)
 			{
 				string val = env_var.substr(pos + 1);
+				//XXX What happens if the value of the environment variable is "   " spaces?
+				//XXX I think both of the next two lines will return "npos", which should
+				//    make the substr throw "out-of-range".
+				//XXX And why is it trimming the spaces in the first place?
+				//    Environment variables are allowed to have embedded spaces.
 				std::string::size_type first = val.find_first_not_of(' ');
 				std::string::size_type last = val.find_last_not_of(' ');
 				return val.substr(first, last - first + 1);
