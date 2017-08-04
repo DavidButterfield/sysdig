@@ -720,7 +720,7 @@ void sinsp_threadinfo::set_cwd(const char* cwd, uint32_t cwdlen)
 
 		tinfo->m_cwd = tpath;
 
-		uint32_t size = tinfo->m_cwd.size();
+		size_t size = tinfo->m_cwd.size();
 
 		if(size == 0 || (tinfo->m_cwd[size - 1] != '/'))
 		{
