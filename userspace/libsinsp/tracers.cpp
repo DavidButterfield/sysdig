@@ -56,16 +56,19 @@ sinsp_tracerparser::parse_result sinsp_tracerparser::process_event_data(char *da
 	m_storlen = m_fragment_size + datalen;
 
 	//
-	// Make sure we have enough space in the buffer and copy the data into it
+	// Make sure we have enough space in the buffer to add the new data
 	//
 	if(m_storage_size < m_storlen + 1)
 	{
 		set_storage_size(m_storlen + 1);
 	}
 
+	// Append the new data to any existing parse-fragment already in the buffer
 	memcpy(m_storage + m_fragment_size, data, datalen);
-	m_storage[m_storlen] = 0;
+	m_storage[m_storlen] = 0;   // terminate for parser, in case it is a partial string
 
+	// Copy the updated string in case we need to restore it below upon RES_TRUNCATED.
+	// Skip if we started with an empty fragment (such cases we restore directly from data)
 	if(m_fragment_size != 0)
 	{
 		m_fullfragment_storage_str = m_storage;
@@ -101,6 +104,8 @@ sinsp_tracerparser::parse_result sinsp_tracerparser::process_event_data(char *da
 	}
 	else
 	{
+		//XXX Could consider this RES_TRUNCATED (not enough bytes available yet) ?
+		//XXX Can this function even be called with datalen == 0 ?
 		m_res = sinsp_tracerparser::RES_FAILED;
 	}
 
@@ -119,28 +124,40 @@ sinsp_tracerparser::parse_result sinsp_tracerparser::process_event_data(char *da
 		// Valid syntax, but the message is incomplete. Buffer it and wait for
 		// more fragments.
 		//
+		//XXX Should this be checking m_storlen rather than m_fragment_size?
+		//
 		if(m_fragment_size > MAX_USER_EVT_BUFFER)
 		{
 			//
 			// Maximum buffering size reached, drop the event
+			//XXX How does this get resynchronized to start a good parse?
 			//
 			m_fragment_size = 0;
+			m_fullfragment_storage_str.clear(); //XXX Right?
 			return m_res;
 		}
 
-		if(m_fullfragment_storage_str.length() == 0)
+		// Restore m_storage, possibly modified by parse_*(), for future retry.
+		//
+		// I guess these two cases must eventually deal with freeing m_fullfragment__str
+		// assuming the retry succeeds and/or the destructor handles it?  XXX Check
+		//
+		if(m_fragment_size == 0)
 		{
+			// We started with an empty fragment, so just recopy from new data
 			memcpy(m_storage, 
 				data, 
 				datalen);
 
 			m_storage[datalen] = 0;
-			m_fragment_size += datalen;
+			m_fragment_size = datalen;
 		}
 		else
 		{
+			// When we started with a fragment, we saved the entire updated string
 			uint32_t tlen = (uint32_t)m_fullfragment_storage_str.length();
 
+			// Restore m_storage from the saved string
 			memcpy(m_storage, 
 				m_fullfragment_storage_str.c_str(), 
 				tlen);
