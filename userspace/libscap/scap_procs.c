@@ -618,6 +618,7 @@ static int32_t scap_proc_add_from_proc(scap_t* handle, uint32_t tid, int parentt
 			tinfo->args_len = filesize - exe_len;
 
 			memcpy(tinfo->args, line + exe_len, tinfo->args_len);
+			ASSERT(tinfo->args[SCAP_MAX_ARGS_SIZE - 1] == 0);
 			tinfo->args[SCAP_MAX_ARGS_SIZE - 1] = 0;
 		}
 		else
@@ -654,6 +655,7 @@ static int32_t scap_proc_add_from_proc(scap_t* handle, uint32_t tid, int parentt
 			tinfo->env_len = filesize;
 
 			memcpy(tinfo->env, line, tinfo->env_len);
+			ASSERT(tinfo->env[SCAP_MAX_ENV_SIZE - 1] == 0);
 			tinfo->env[SCAP_MAX_ENV_SIZE - 1] = 0;
 		}
 		else
@@ -743,6 +745,7 @@ static int32_t scap_proc_add_from_proc(scap_t* handle, uint32_t tid, int parentt
 			if(uth_status != SCAP_SUCCESS)
 			{
 				snprintf(error, SCAP_LASTERR_SIZE, "process table allocation error (2)");
+				free(tinfo);	    //XXX Right?
 				return SCAP_FAILURE;
 			}
 		}
