@@ -46,6 +46,12 @@ void path_prefix_search::split_path(const filter_value_t &path, filter_value_t &
 		return;
 	}
 
+	//XXX File pathnames can have multiple contiguous '/' which parse as a single '/'
+	//XXX e.g. try this valid pathname:  ls /////usr//share/man////
+	//XXX So when skipping leading/trailing '/', should skip them all (here and elsewhere)
+	//XXX (taking care to ensure that length remains non-negative).
+	//XXX Also need to skip such "runs" of '/' at the dirent/remainder split point.
+
 	// Skip any trailing /, not needed
 	if (path.first[path.second-1] == '/')
 	{
@@ -60,16 +66,20 @@ void path_prefix_search::split_path(const filter_value_t &path, filter_value_t &
 		start++;
 	}
 
+	//XXX What happens if path is "/" ?  We now have (start == 1) and (length == 0).
+	//XXX pos will now get set to point past the end of the path for the (*pos == 0x2F).
+	//XXX So pos gets set to NULL and we return with dirent.second = (uint32_t)(0 - 1)
+
 	uint8_t* pos = path.first + start;
 	uint32_t counter = 0;
-	while(counter < path.second)
+	while(counter < path.second)  //XXX (counter < length), or (counter < length - start) ?
 	{
 		if (*pos == 0x2F) // '/'
 		{
 			break;
 		}
 		++pos;
-		if(++counter >= path.second)
+		if(++counter >= path.second)	//XXX (++counter >= length), or... ?
 		{
 			pos = NULL;
 			break;
@@ -84,9 +94,9 @@ void path_prefix_search::split_path(const filter_value_t &path, filter_value_t &
 	else
 	{
 		dirent.first = path.first + start;
-		dirent.second = (uint8_t *) pos-dirent.first;
+		dirent.second = pos - dirent.first;
 
-		remainder.first = (uint8_t *) pos;
+		remainder.first = pos;
 		remainder.second = length-dirent.second-start;
 	}
 }
