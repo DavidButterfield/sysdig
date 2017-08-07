@@ -905,7 +905,7 @@ void sinsp::restart_capture_at_filepos(uint64_t filepos)
 	//
 	// Backup a couple of settings
 	//
-	uint64_t evtnum = m_nevts;
+	uint32_t evtnum = m_nevts;
 	string filterstring = m_filterstring;
 
 	//
