@@ -640,7 +640,6 @@ void k8s_dispatcher::handle_event(const Json::Value& root, const msg_data& data)
 
 void k8s_dispatcher::extract_data(Json::Value& root, bool enqueue)
 {
-	std::ostringstream os;
 	msg_data data = get_msg_data(root);
 	if(data.is_valid())
 	{

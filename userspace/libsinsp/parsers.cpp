@@ -165,7 +165,7 @@ void sinsp_parser::process_event(sinsp_evt *evt)
 		if (m_drop_event_flags)
 		{
 			enum ppm_event_flags flags;
-			uint16_t etype = evt->m_pevt->type;
+			// uint16_t etype = evt->m_pevt->type;	//XXX Needed?
 			if(etype == PPME_GENERIC_E || etype == PPME_GENERIC_X)
 			{
 				sinsp_evt_param *parinfo = evt->get_param(0);
@@ -3393,8 +3393,6 @@ void sinsp_parser::parse_chdir_exit(sinsp_evt *evt)
 	//
 	if(retval >= 0)
 	{
-		sinsp_evt_param *parinfo;
-
 		// Update the thread working directory
 		parinfo = evt->get_param(1);
 		evt->m_tinfo->set_cwd(parinfo->m_val, parinfo->m_len);
