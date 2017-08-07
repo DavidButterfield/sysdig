@@ -183,7 +183,7 @@ void sinsp_view_info::set_sorting_col()
 		throw sinsp_exception("view format error: more than one sorting column");
 	}
 
-	if((int64_t)m_sortingcol < 0)
+	if((int32_t)m_sortingcol < 0)
 	{
 		ASSERT(false);
 		throw sinsp_exception("view sorting column configuration error");
