@@ -56,7 +56,7 @@ scap_t* scap_open_live_int(char *error,
 	return NULL;
 }
 #else
-static uint32_t get_max_consumers()
+static uint32_t get_max_consumers(void)
 {
 	uint32_t max;
 	FILE *pfile = fopen("/sys/module/" PROBE_DEVICE_NAME "_probe/parameters/max_consumers", "r");
@@ -108,6 +108,11 @@ scap_t* scap_open_live_int(char *error,
 	//
 	// Find out how many devices we have to open, which equals to the number of CPUs
 	//
+
+	//XXX Should check (signed) return value for error (also other sysconf calls elsewhere)
+	// long sysconf(int name);
+	//	If name is invalid, -1 is returned, and errno is set to EINVAL.
+
 	ndevs = sysconf(_SC_NPROCESSORS_ONLN);
 	max_devs = sysconf(_SC_NPROCESSORS_CONF);
 
@@ -1371,9 +1376,9 @@ int32_t scap_disable_dynamic_snaplen(scap_t* handle)
 #endif
 }
 
-const char* scap_get_host_root()
+const char* scap_get_host_root(void)
 {
-	char* p = getenv("SYSDIG_HOST_ROOT");
+	const char* p = getenv("SYSDIG_HOST_ROOT");
 	if(!p)
 	{
 		p = "";
