@@ -901,7 +901,7 @@ int32_t scap_fd_read_unix_sockets_from_proc_fs(scap_t *handle, const char* filen
 	FILE *f;
 	char line[SCAP_MAX_PATH_SIZE];
 	int first_line = false;
-	char *delimiters = " \t";
+	const char *delimiters = " \t";
 	char *token;
 	int32_t uth_status = SCAP_SUCCESS;
 
@@ -1026,7 +1026,7 @@ int32_t scap_fd_read_netlink_sockets_from_proc_fs(scap_t *handle, const char* fi
 	FILE *f;
 	char line[SCAP_MAX_PATH_SIZE];
 	int first_line = false;
-	char *delimiters = " \t";
+	const char *delimiters = " \t";
 	char *token;
 	int32_t uth_status = SCAP_SUCCESS;
 
@@ -1655,6 +1655,7 @@ void scap_fd_free_fdinfo(scap_fdinfo **fdi)
 	}
 }
 
+#if 0	// unused function decode_st_mode()
 char * decode_st_mode(struct stat* sb)
 {
 	switch(sb->st_mode & S_IFMT) {
@@ -1684,6 +1685,8 @@ char * decode_st_mode(struct stat* sb)
     	break;
     }
 }
+#endif
+
 //
 // Scan the directory containing the fd's of a proc /proc/x/fd
 //
