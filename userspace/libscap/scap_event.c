@@ -31,12 +31,12 @@ along with sysdig.  If not, see <http://www.gnu.org/licenses/>.
 // This is defined in the driver
 extern const struct ppm_event_info g_event_info[];
 extern const struct ppm_syscall_desc g_syscall_info_table[];
-extern bool validate_info_table_size();
+extern bool validate_info_table_size(void);
 
 //
 // Get the event info table
 //
-const struct ppm_event_info* scap_get_event_info_table()
+const struct ppm_event_info* scap_get_event_info_table(void)
 {
 	ASSERT(validate_info_table_size());
 	return g_event_info;
@@ -45,7 +45,7 @@ const struct ppm_event_info* scap_get_event_info_table()
 //
 // Get the syscall info table
 //
-const struct ppm_syscall_desc* scap_get_syscall_info_table()
+const struct ppm_syscall_desc* scap_get_syscall_info_table(void)
 {
 	return g_syscall_info_table;
 }

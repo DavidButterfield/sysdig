@@ -346,7 +346,7 @@ const struct ppm_syscall_desc g_syscall_info_table[PPM_SC_MAX] = {
 	/*PPM_SC_GETRESGID32*/ { EC_IO_OTHER, (enum ppm_event_flags)(EF_NONE), "getresgid" },
 };
 
-bool validate_info_table_size()
+bool validate_info_table_size(void)
 {
 	return (sizeof(g_syscall_info_table) / sizeof(g_syscall_info_table[0]) == PPM_SC_MAX);
 }

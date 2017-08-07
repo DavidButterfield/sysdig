@@ -464,7 +464,7 @@ typedef struct scap_dumper scap_dumper_t;
 struct ppm_syscall_desc {
 	enum ppm_event_category category; /**< System call category. */
 	enum ppm_event_flags flags;
-	char *name; /**< System call name, e.g. 'open'. */
+	const char *name; /**< System call name, e.g. 'open'. */
 };
 
 /*@}*/
@@ -801,7 +801,7 @@ scap_userlist* scap_get_user_list(scap_t* handle);
   The ppm_event_info contains the full information necessary to decode an event coming from
   \ref scap_next.
 */
-const struct ppm_event_info* scap_get_event_info_table();
+const struct ppm_event_info* scap_get_event_info_table(void);
 
 /*!
   \brief Retrieve the table with the description of system call that
@@ -813,7 +813,7 @@ const struct ppm_event_info* scap_get_event_info_table();
 
   This table can be used to interpret the ID parameter of PPME_GENERIC_E and PPME_GENERIC_X.
 */
-const struct ppm_syscall_desc* scap_get_syscall_info_table();
+const struct ppm_syscall_desc* scap_get_syscall_info_table(void);
 
 /*!
   \brief Get generic machine information
@@ -880,7 +880,7 @@ int32_t scap_unset_eventmask(scap_t* handle, uint32_t event_id);
   if sysdig runs in a container, so that all the information for the
   host can be correctly extracted.
 */
-const char* scap_get_host_root();
+const char* scap_get_host_root(void);
 
 /*!
   \brief Get the process list by querying the sysdig kernel module.
