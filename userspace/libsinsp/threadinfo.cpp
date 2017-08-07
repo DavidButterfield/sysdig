@@ -153,10 +153,10 @@ void sinsp_threadinfo::fix_sockets_coming_from_proc()
 	}
 }
 
-#define STR_AS_NUM_JAVA 0x6176616a
-#define STR_AS_NUM_RUBY 0x79627572
-#define STR_AS_NUM_PERL 0x6c726570
-#define STR_AS_NUM_NODE 0x65646f6e
+#define STR_AS_NUM_JAVA le32toh(0x6176616a)
+#define STR_AS_NUM_RUBY le32toh(0x79627572)
+#define STR_AS_NUM_PERL le32toh(0x6c726570)
+#define STR_AS_NUM_NODE le32toh(0x65646f6e)
 
 void sinsp_threadinfo::compute_program_hash()
 {
