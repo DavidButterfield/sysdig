@@ -100,7 +100,7 @@ public:
 		return m_response_headers;
 	}
 	
-	const long get_response_code() const
+	const long get_response_code()
 	{
 		return m_response_code;
 	}
